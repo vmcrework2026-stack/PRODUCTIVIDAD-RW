@@ -1,0 +1,477 @@
+<title>Productividad por Mesa RW</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: encabezado, panel de filtros, tarjetas KPI, gráficas en rejilla, tabla dinámica y detalle. Azul = C4, naranja = C5. */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --ink:#0f1720; --ink2:#46505d; --muted:#76818f; --line:#e1e5ea; --soft:#eef1f5;
+  --c4:#2a78d6; --c5:#eb6834; --accent:#2a78d6; --accent-ink:#ffffff;
+  --good:#16794a; --warn:#a8680a; --bad:#c0392b; --good-bg:#e4f4ec; --warn-bg:#fbf0dc; --bad-bg:#fbe7e4;
+  --shadow:0 1px 2px rgba(15,23,32,.05);
+  --f-head:"Space Grotesk","Inter",system-ui,sans-serif; --f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1215; --surface:#181b1f; --ink:#eceff3; --ink2:#b6bec9; --muted:#8a95a2; --line:#2a2f36; --soft:#20242a;
+  --c4:#3987e5; --c5:#d95926; --accent:#3987e5; --accent-ink:#0b0f14;
+  --good:#4cc38a; --warn:#e0a53a; --bad:#ec7a6c; --good-bg:#12291e; --warn-bg:#2c2412; --bad-bg:#2d1916; --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1215; --surface:#181b1f; --ink:#eceff3; --ink2:#b6bec9; --muted:#8a95a2; --line:#2a2f36; --soft:#20242a;
+  --c4:#3987e5; --c5:#d95926; --accent:#3987e5; --accent-ink:#0b0f14;
+  --good:#4cc38a; --warn:#e0a53a; --bad:#ec7a6c; --good-bg:#12291e; --warn-bg:#2c2412; --bad-bg:#2d1916; --shadow:none; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;
+  padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--f-head);margin:0;text-wrap:balance}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+header.top h1{font-size:26px;font-weight:700;letter-spacing:-.01em}
+header.top p{margin:4px 0 0;color:var(--ink2)}
+.meta-box{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.meta-box label{color:var(--ink2);font-size:13px}
+.meta-box input{width:84px;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:5px 8px;text-align:right}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);min-width:0}
+.filters{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.f-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+.f-head h2{font-size:15px}
+.f-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.f-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px 24px}
+.fg{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fg-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--ink2);transition:background .12s,border-color .12s}
+.chip:hover{border-color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.chip.empty{opacity:.45}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:13px;color:var(--ink)}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.active-count{font-size:13px;color:var(--ink2)}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.kpi .l{font-size:12px;color:var(--ink2)}
+.kpi .v{font-family:var(--f-head);font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+.kpi .s{font-size:12px;color:var(--muted);min-height:18px}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600}
+.pill.good{background:var(--good-bg);color:var(--good)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.bad{background:var(--bad-bg);color:var(--bad)}
+
+.insights{padding:14px 16px}
+.insights ul{margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px;color:var(--ink2)}
+.insights b{color:var(--ink);font-weight:600}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px}
+.card{padding:16px;display:flex;flex-direction:column;gap:12px}
+.card-h{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:space-between;align-items:baseline}
+.card-h h2{font-size:16px}
+.card-h .sub{font-size:12px;color:var(--muted)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--ink2)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.empty-msg{color:var(--muted);padding:24px 0;text-align:center}
+
+/* columnas por día */
+.cols{position:relative;height:240px;display:flex;align-items:flex-end;gap:10px;padding:22px 0 0 40px}
+.grid-l{position:absolute;left:40px;right:0;border-top:1px solid var(--line)}
+.grid-l span{position:absolute;left:-40px;top:-8px;width:34px;text-align:right;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.colwrap{position:relative;flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;border:0;background:none;padding:0}
+.stack{width:min(64px,100%);display:flex;flex-direction:column-reverse;gap:2px;justify-content:flex-start}
+.seg{width:100%;border-radius:4px 4px 0 0}
+.colwrap .tot{font-size:11px;color:var(--ink2);margin-bottom:3px;font-variant-numeric:tabular-nums}
+.xlab{display:flex;gap:10px;padding-left:40px}
+.xlab span{flex:1;text-align:center;font-size:12px;color:var(--ink2)}
+.colwrap.dim,.bar-row.dim{opacity:.35}
+.colwrap.sel .stack,.bar-row.sel .track{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
+
+/* barras horizontales */
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar-row{display:grid;grid-template-columns:minmax(90px,150px) 1fr 70px;align-items:center;gap:10px;border:0;background:none;padding:3px 0;text-align:left;width:100%}
+.bar-row .lab{font-size:13px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track{position:relative;height:16px;background:var(--soft);border-radius:4px}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0;background:var(--accent);min-width:2px}
+.bar-row .val{text-align:right;font-size:13px;font-weight:500;font-variant-numeric:tabular-nums}
+.bar-row:hover .lab{color:var(--ink)}
+.metaline{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+
+/* mapa de calor */
+.tbl-scroll{overflow-x:auto;max-width:100%}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+thead th{font-weight:600;color:var(--ink2);background:var(--surface);position:sticky;top:0;font-size:12px}
+tfoot td,tr.total td{font-weight:600;background:var(--soft)}
+td.hm{text-align:center;border-bottom:2px solid var(--surface);border-right:2px solid var(--surface)}
+td.rowlab{font-weight:500}
+th button{border:0;background:none;font-weight:600;color:inherit;padding:0;font-size:12px}
+th button:hover{color:var(--ink)}
+th .arr{margin-left:4px;color:var(--accent)}
+
+.seg-ctl{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);flex-wrap:wrap}
+.seg-ctl button{border:0;background:none;padding:6px 11px;font-size:13px;color:var(--ink2);border-right:1px solid var(--line)}
+.seg-ctl button:last-child{border-right:0}
+.seg-ctl button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.pv-controls{display:flex;flex-wrap:wrap;gap:12px 24px}
+.pv-controls .fg{flex:0 1 auto}
+.search{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 10px;min-width:180px}
+.tools{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.tt{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--bg);padding:6px 10px;border-radius:6px;font-size:12px;line-height:1.35;max-width:260px;display:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:8px;font-size:13px;z-index:60}
+footer{color:var(--muted);font-size:12px}
+@media (max-width:560px){
+  header.top h1{font-size:22px}
+  .bar-row{grid-template-columns:90px 1fr 56px}
+  .cols{gap:6px}.xlab{gap:6px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Productividad por Mesa RW</h1>
+      <p id="subtitle"></p>
+    </div>
+    <div class="meta-box">
+      <label for="meta">Meta de piezas por persona</label>
+      <input id="meta" type="number" min="1" step="10" value="300" class="num">
+    </div>
+  </header>
+
+  <section class="panel filters" aria-label="Filtros">
+    <div class="f-head">
+      <h2>Filtros</h2>
+      <div class="f-actions">
+        <span class="active-count" id="activeCount"></span>
+        <button class="btn" data-quick="all">Todo el periodo</button>
+        <button class="btn" data-quick="last">Último día</button>
+        <button class="btn" data-quick="last3">Últimos 3 días</button>
+        <button class="btn primary" id="reset">Limpiar filtros</button>
+      </div>
+    </div>
+    <div class="f-grid" id="filterGrid"></div>
+  </section>
+
+  <section class="kpis" id="kpis" aria-label="Indicadores"></section>
+
+  <section class="panel insights" id="insights"></section>
+
+  <div class="grid2">
+    <section class="panel card">
+      <div class="card-h"><h2>Piezas por día</h2><div class="legend"><span><i style="background:var(--c4)"></i>C4</span><span><i style="background:var(--c5)"></i>C5</span></div></div>
+      <div id="chDay"></div>
+      <div class="sub card-h"><span class="sub">Clic en una columna para filtrar por fecha</span></div>
+    </section>
+    <section class="panel card">
+      <div class="card-h"><h2>Productividad por almacén vs meta</h2><span class="sub">Piezas por persona</span></div>
+      <div id="chAlm" class="bars"></div>
+      <div class="card-h" style="margin-top:6px"><h2>Piezas por turno</h2></div>
+      <div id="chTurno" class="bars"></div>
+    </section>
+    <section class="panel card">
+      <div class="card-h"><h2>Piezas por tipo de retrabajo</h2><span class="sub">Clic en una barra para filtrar</span></div>
+      <div id="chTipo" class="bars"></div>
+    </section>
+    <section class="panel card">
+      <div class="card-h"><h2>Piezas por mesa</h2><span class="sub">Clic en una barra para filtrar</span></div>
+      <div id="chMesa" class="bars"></div>
+    </section>
+  </div>
+
+  <section class="panel card">
+    <div class="card-h"><h2>Mapa de calor: mesa por fecha</h2><span class="sub">Piezas retrabajadas · el color indica volumen</span></div>
+    <div class="tbl-scroll" id="heat"></div>
+  </section>
+
+  <section class="panel card">
+    <div class="card-h"><h2>Tabla dinámica</h2><span class="sub">Elige filas, columnas y valor. Clic en un encabezado para ordenar.</span></div>
+    <div class="pv-controls">
+      <div class="fg"><span class="fg-label">Filas</span><div class="seg-ctl" id="pvRows"></div></div>
+      <div class="fg"><span class="fg-label">Columnas</span><div class="seg-ctl" id="pvCols"></div></div>
+      <div class="fg"><span class="fg-label">Valor</span><div class="seg-ctl" id="pvMetric"></div></div>
+    </div>
+    <div class="tools"><span class="sub" id="pvInfo" style="color:var(--muted);font-size:12px"></span><button class="btn" id="pvCopy">Copiar tabla</button></div>
+    <div class="tbl-scroll" id="pivot"></div>
+  </section>
+
+  <section class="panel card">
+    <div class="card-h"><h2>Detalle de capturas</h2><span class="sub" id="dtInfo"></span></div>
+    <div class="tools">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <div class="seg-ctl" id="dtMode"></div>
+        <input class="search" id="dtSearch" type="search" placeholder="Buscar en el detalle" aria-label="Buscar en el detalle">
+      </div>
+      <button class="btn" id="dtCopy">Copiar tabla</button>
+    </div>
+    <div class="tbl-scroll" id="detail"></div>
+  </section>
+
+  <footer>Fuente: hoja Captura del archivo PRODUCTIVIDAD_POR_MESA_RW (44 registros, 07/11/2026 a 11/11/2026). Personas se cuentan una vez por fecha, almacén, mesa y turno, con el valor más alto capturado.</footer>
+</div>
+<div class="tt" id="tt"></div>
+
+<script>
+const TIPOS=["Bundle","Cambio de UPC","Retiro de fajilla","Bundle (3 pcs)","Bundle (4 pcs)","Inserto de garantia","Celofan (chico)","Celofan (mediano)","Celofan (gde)","Otro"];
+const ALMS=["C4","C5"], MESAS=["1","2","3","4","5","6"], TURNOS=["1","2","3","MIXTO"];
+const T={B:"Bundle",U:"Cambio de UPC",B3:"Bundle (3 pcs)",I:"Inserto de garantia",C:"Celofan (mediano)"};
+// [fecha, turno, almacén, piezas, mesa, tipo, personas]
+const RAW=[
+["2026-11-07","1","C5",90,1,"B",6],["2026-11-07","1","C5",50,2,"B",6],["2026-11-07","1","C5",35,1,"B",6],["2026-11-07","1","C5",147,1,"B",6],
+["2026-11-07","1","C5",60,1,"B",6],["2026-11-07","1","C5",16,2,"B",6],["2026-11-07","1","C5",117,3,"B",6],["2026-11-07","1","C5",35,1,"B",6],
+["2026-11-07","1","C5",35,2,"B",6],["2026-11-07","1","C5",60,2,"B",6],["2026-11-07","1","C5",66,1,"B",6],["2026-11-07","1","C5",600,1,"B",6],
+["2026-11-07","2","C5",600,2,"B",6],["2026-11-07","2","C5",1200,1,"B",6],["2026-11-07","2","C5",1200,2,"B",6],
+["2026-11-07","1","C4",400,3,"B",6],["2026-11-07","1","C4",1000,1,"B",6],["2026-11-07","1","C4",600,3,"B",6],["2026-11-07","1","C4",900,2,"B",6],
+["2026-11-09","2","C5",30,3,"B",6],["2026-11-09","2","C5",600,3,"B",6],["2026-11-09","2","C5",200,3,"B",6],["2026-11-09","2","C5",90,3,"B3",6],["2026-11-09","2","C5",300,3,"B",6],
+["2026-11-09","2","C4",450,2,"I",8],["2026-11-09","2","C4",450,1,"I",8],
+["2026-11-09","1","C4",600,1,"U",6],["2026-11-09","1","C4",600,2,"U",6],["2026-11-09","1","C4",700,3,"U",6],
+["2026-11-09","2","C4",45,4,"U",4],["2026-11-09","1","C4",400,3,"B",8],["2026-11-09","2","C4",400,4,"B",8],["2026-11-09","2","C4",100,4,"B",7],
+["2026-11-10","MIXTO","C5",490,3,"B3",6],["2026-11-10","MIXTO","C5",860,3,"B3",6],["2026-11-10","MIXTO","C5",800,3,"B",6],["2026-11-10","MIXTO","C5",420,3,"B3",5],
+["2026-11-11","1","C5",1704,2,"B3",7],["2026-11-11","1","C5",1703,3,"B3",7],
+["2026-11-11","1","C4",177,4,"U",5],["2026-11-11","1","C4",400,3,"B",5],["2026-11-11","1","C4",400,1,"B",5],["2026-11-11","1","C4",900,2,"I",10],["2026-11-11","1","C4",167,6,"C",4]
+];
+const DATA=RAW.map(([d,t,a,p,m,k,n],i)=>({id:i+1,d,t,a,p,m:String(m),k:T[k],n}));
+const DATES=[...new Set(DATA.map(r=>r.d))].sort();
+const META_INIT=300;
+let META=META_INIT;
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=n=>Math.round(n).toLocaleString("es-MX");
+const fmt1=n=>n.toLocaleString("es-MX",{minimumFractionDigits:1,maximumFractionDigits:1});
+const WD=["dom","lun","mar","mié","jue","vie","sáb"];
+const dShort=d=>d.slice(8)+"/"+d.slice(5,7);
+const dLong=d=>WD[new Date(d+"T12:00:00").getDay()]+" "+dShort(d);
+const turnoLab=t=>t==="MIXTO"?"Mixto":"Turno "+t;
+
+const F={a:new Set(),t:new Set(),m:new Set(),k:new Set(),d:new Set()};
+const FCFG=[
+ {key:"d",label:"Fecha",opts:DATES,lab:dLong},
+ {key:"a",label:"Almacén",opts:ALMS,lab:x=>x},
+ {key:"t",label:"Turno",opts:TURNOS,lab:turnoLab},
+ {key:"m",label:"Mesa",opts:MESAS,lab:x=>"Mesa "+x},
+ {key:"k",label:"Tipo de retrabajo",opts:TIPOS,lab:x=>x},
+];
+const inData=(key,v)=>DATA.some(r=>r[key]===v);
+const rowsExcept=(ex)=>DATA.filter(r=>Object.keys(F).every(k=>k===ex||!F[k].size||F[k].has(r[k])));
+const filtered=()=>rowsExcept(null);
+
+function persons(rows){const g=new Map();rows.forEach(r=>{const k=r.d+"|"+r.t+"|"+r.a+"|"+r.m;g.set(k,Math.max(g.get(k)||0,r.n))});let s=0;g.forEach(v=>s+=v);return s}
+function agg(rows){const piezas=rows.reduce((s,r)=>s+r.p,0),personas=persons(rows);const ppp=personas?piezas/personas:0;return{piezas,personas,regs:rows.length,ppp,pct:META?ppp/META*100:0}}
+function status(pct){return pct>=100?["good","▲ Cumple meta"]:pct>=60?["warn","● Cerca de meta"]:["bad","▼ Bajo meta"]}
+const pillHTML=pct=>{const[c,t]=status(pct);return `<span class="pill ${c}">${t}</span>`};
+
+/* ---------- filtros ---------- */
+function renderFilters(){
+  $("filterGrid").innerHTML=FCFG.map(c=>`<div class="fg"><span class="fg-label">${c.label}</span><div class="chips" data-key="${c.key}">
+    <button class="chip" data-v="__all" aria-pressed="${F[c.key].size===0}">Todos</button>
+    ${c.opts.map(o=>`<button class="chip ${inData(c.key,o)?"":"empty"}" data-v="${esc(o)}" aria-pressed="${F[c.key].has(o)}">${esc(c.lab(o))}</button>`).join("")}</div></div>`).join("");
+  const n=Object.values(F).filter(s=>s.size).length;
+  $("activeCount").textContent=n?`${n} filtro${n>1?"s":""} activo${n>1?"s":""}`:"Sin filtros";
+}
+$("filterGrid").addEventListener("click",e=>{
+  const b=e.target.closest(".chip");if(!b)return;const key=b.parentElement.dataset.key,v=b.dataset.v;
+  if(v==="__all")F[key].clear();else F[key].has(v)?F[key].delete(v):F[key].add(v);
+  update();
+});
+function toggle(key,v){F[key].has(v)?F[key].delete(v):F[key].add(v);update()}
+$("reset").onclick=()=>{Object.values(F).forEach(s=>s.clear());update()};
+document.querySelectorAll("[data-quick]").forEach(b=>b.onclick=()=>{
+  F.d.clear();const q=b.dataset.quick;
+  if(q==="last")F.d.add(DATES[DATES.length-1]);
+  if(q==="last3")DATES.slice(-3).forEach(d=>F.d.add(d));
+  update();
+});
+$("meta").addEventListener("input",e=>{const v=parseFloat(e.target.value);if(v>0){META=v;update()}});
+
+/* ---------- KPIs e insights ---------- */
+function renderKPIs(rows){
+  const a=agg(rows);
+  const mesasAct=new Set(rows.filter(r=>r.p>0).map(r=>r.a+"·"+r.m)).size;
+  const days=new Set(rows.map(r=>r.d)).size;
+  const k=[
+   ["Piezas retrabajadas",fmt(a.piezas),`${fmt(a.regs)} registros de captura`],
+   ["Personas (mesa y turno)",fmt(a.personas),`${days} día${days===1?"":"s"} con captura`],
+   ["Piezas por persona",a.personas?fmt1(a.ppp):"–",a.personas?pillHTML(a.pct):""],
+   ["% de la meta",a.personas?fmt1(a.pct)+"%":"–",`Meta ${fmt(META)} pzs por persona`],
+   ["Mesas activas",`${mesasAct} / ${ALMS.length*MESAS.length}`,"Mesas con piezas registradas"],
+  ];
+  $("kpis").innerHTML=k.map(([l,v,s])=>`<div class="panel kpi"><span class="l">${l}</span><span class="v num">${v}</span><span class="s">${s}</span></div>`).join("");
+}
+function topBy(rows,fn){const m=new Map();rows.forEach(r=>{const k=fn(r);m.set(k,(m.get(k)||0)+r.p)});return[...m.entries()].sort((x,y)=>y[1]-x[1])}
+function renderInsights(rows){
+  if(!rows.length){$("insights").innerHTML=`<h2 style="font-size:15px">Lectura rápida</h2><p class="empty-msg">Ningún registro coincide con los filtros.</p>`;return}
+  const tot=rows.reduce((s,r)=>s+r.p,0);
+  const mesa=topBy(rows,r=>r.a+" · Mesa "+r.m)[0],tipo=topBy(rows,r=>r.k)[0],dia=topBy(rows,r=>r.d)[0];
+  const byAlm=ALMS.map(a=>[a,agg(rows.filter(r=>r.a===a))]).filter(x=>x[1].regs);
+  const best=byAlm.slice().sort((x,y)=>y[1].ppp-x[1].ppp)[0];
+  const li=[
+   `Mesa con más volumen: <b>${esc(mesa[0])}</b> con <b>${fmt(mesa[1])}</b> piezas (${fmt1(mesa[1]/tot*100)}% del total).`,
+   `Tipo de retrabajo principal: <b>${esc(tipo[0])}</b> con <b>${fmt(tipo[1])}</b> piezas.`,
+   `Día más productivo: <b>${dLong(dia[0])}</b> con <b>${fmt(dia[1])}</b> piezas.`,
+   best?`Mejor almacén por persona: <b>${best[0]}</b> con <b>${fmt1(best[1].ppp)}</b> pzs/persona (${fmt1(best[1].pct)}% de la meta).`:""
+  ].filter(Boolean);
+  $("insights").innerHTML=`<h2 style="font-size:15px">Lectura rápida</h2><ul>${li.map(x=>`<li>${x}</li>`).join("")}</ul>`;
+}
+
+/* ---------- gráficas ---------- */
+function niceMax(v){if(v<=0)return 1;const p=Math.pow(10,Math.floor(Math.log10(v))),f=v/p;return(f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p}
+function renderDay(){
+  const rows=rowsExcept("d");
+  const data=DATES.map(d=>{const r=rows.filter(x=>x.d===d);return{d,c4:r.filter(x=>x.a==="C4").reduce((s,x)=>s+x.p,0),c5:r.filter(x=>x.a==="C5").reduce((s,x)=>s+x.p,0)}});
+  const max=niceMax(Math.max(...data.map(x=>x.c4+x.c5),1));
+  const H=218;
+  const grid=[0,.5,1].map(f=>`<div class="grid-l" style="bottom:${f*(H-24)}px;"><span>${fmt(max*f)}</span></div>`).join("");
+  const cols=data.map(x=>{
+    const sel=F.d.has(x.d),dim=F.d.size&&!sel;
+    const tip=`${dLong(x.d)}<br>C4: ${fmt(x.c4)}<br>C5: ${fmt(x.c5)}<br>Total: ${fmt(x.c4+x.c5)}`;
+    return `<button class="colwrap ${sel?"sel":""} ${dim?"dim":""}" data-d="${x.d}" data-tip="${esc(tip)}" aria-label="${dLong(x.d)}: ${fmt(x.c4+x.c5)} piezas">
+      <span class="tot">${x.c4+x.c5?fmt(x.c4+x.c5):""}</span>
+      <span class="stack" style="height:${(x.c4+x.c5)/max*(H-24)}px">
+        ${x.c4?`<span class="seg" style="height:${x.c4/(x.c4+x.c5)*100}%;background:var(--c4)"></span>`:""}
+        ${x.c5?`<span class="seg" style="height:${x.c5/(x.c4+x.c5)*100}%;background:var(--c5)"></span>`:""}
+      </span></button>`}).join("");
+  $("chDay").innerHTML=`<div class="cols">${grid}${cols}</div><div class="xlab">${DATES.map(d=>`<span>${dLong(d)}</span>`).join("")}</div>`;
+  $("chDay").querySelectorAll(".colwrap").forEach(b=>b.onclick=()=>toggle("d",b.dataset.d));
+}
+function hbars(id,key,items,{maxv,metaVal,fmtv=fmt}={}){
+  const el=$(id);
+  if(!items.length||items.every(i=>!i.v)){el.innerHTML=`<p class="empty-msg">Sin datos con los filtros actuales.</p>`;return}
+  const max=maxv||Math.max(...items.map(i=>i.v),1);
+  el.innerHTML=items.map(i=>{
+    const sel=F[key].has(i.k),dim=F[key].size&&!sel;
+    return `<button class="bar-row ${sel?"sel":""} ${dim?"dim":""}" data-k="${esc(i.k)}" data-tip="${esc(i.tip)}">
+      <span class="lab" title="${esc(i.l)}">${esc(i.l)}</span>
+      <span class="track"><span class="fill" style="width:${i.v/max*100}%;background:${i.color||"var(--accent)"}"></span>${metaVal?`<span class="metaline" style="left:${metaVal/max*100}%" title="Meta"></span>`:""}</span>
+      <span class="val">${fmtv(i.v)}</span></button>`}).join("");
+  el.querySelectorAll(".bar-row").forEach(b=>b.onclick=()=>toggle(key,b.dataset.k));
+}
+function renderBars(){
+  // almacén vs meta
+  let rows=rowsExcept("a");
+  const al=ALMS.map(a=>{const g=agg(rows.filter(r=>r.a===a));return{k:a,l:a,v:g.ppp,color:a==="C4"?"var(--c4)":"var(--c5)",tip:`${a}<br>${fmt(g.piezas)} piezas · ${fmt(g.personas)} personas<br>${fmt1(g.ppp)} pzs/persona · ${fmt1(g.pct)}% de la meta`}});
+  const mx=Math.max(META,...al.map(x=>x.v))*1.08;
+  hbars("chAlm","a",al,{maxv:mx,metaVal:META,fmtv:fmt1});
+  $("chAlm").insertAdjacentHTML("beforeend",`<div class="sub" style="font-size:12px;color:var(--muted)"><span style="display:inline-block;width:2px;height:10px;background:var(--ink);vertical-align:-1px;margin-right:6px"></span>Meta: ${fmt(META)} pzs por persona</div>`);
+  // turno
+  rows=rowsExcept("t");
+  hbars("chTurno","t",TURNOS.map(t=>{const s=rows.filter(r=>r.t===t),g=agg(s);return{k:t,l:turnoLab(t),v:g.piezas,tip:`${turnoLab(t)}<br>${fmt(g.piezas)} piezas · ${fmt(g.personas)} personas<br>${g.personas?fmt1(g.ppp):"–"} pzs/persona`}}));
+  // tipo
+  rows=rowsExcept("k");
+  hbars("chTipo","k",TIPOS.map(k=>{const g=agg(rows.filter(r=>r.k===k));return{k,l:k,v:g.piezas,tip:`${k}<br>${fmt(g.piezas)} piezas · ${g.regs} registros<br>${g.personas?fmt1(g.ppp)+" pzs/persona":""}`}}).filter(i=>i.v>0||F.k.has(i.k)).sort((a,b)=>b.v-a.v));
+  // mesa (almacén · mesa)
+  rows=rowsExcept("m");
+  const ms=[];ALMS.forEach(a=>MESAS.forEach(m=>{const g=agg(rows.filter(r=>r.a===a&&r.m===m));ms.push({k:m,l:`${a} · Mesa ${m}`,v:g.piezas,color:a==="C4"?"var(--c4)":"var(--c5)",tip:`${a} · Mesa ${m}<br>${fmt(g.piezas)} piezas · ${fmt(g.personas)} personas<br>${g.personas?fmt1(g.ppp)+" pzs/persona":"Sin captura"}`})}));
+  hbars("chMesa","m",ms.sort((a,b)=>b.v-a.v));
+}
+function renderHeat(rows){
+  const dates=DATES.filter(d=>!F.d.size||F.d.has(d));
+  const body=[];let mx=1;const vals={};
+  ALMS.forEach(a=>MESAS.forEach(m=>{vals[a+m]=dates.map(d=>rows.filter(r=>r.a===a&&r.m===m&&r.d===d).reduce((s,r)=>s+r.p,0));mx=Math.max(mx,...vals[a+m])}));
+  ALMS.forEach(a=>MESAS.forEach(m=>{
+    const v=vals[a+m],tot=v.reduce((s,x)=>s+x,0);
+    body.push(`<tr><td class="rowlab">${a} · Mesa ${m}</td>${v.map((x,i)=>{
+      const col=a==="C4"?"var(--c4)":"var(--c5)";
+      return `<td class="hm" style="${x?`background:color-mix(in srgb,${col} ${Math.round(12+x/mx*70)}%,var(--surface));`:"color:var(--muted)"}" data-tip="${a} · Mesa ${m}<br>${dLong(dates[i])}: ${fmt(x)} piezas">${x?fmt(x):"–"}</td>`}).join("")}<td><b>${fmt(tot)}</b></td></tr>`)}));
+  $("heat").innerHTML=`<table><thead><tr><th>Almacén · Mesa</th>${dates.map(d=>`<th>${dLong(d)}</th>`).join("")}<th>Total</th></tr></thead><tbody>${body.join("")}</tbody></table>`;
+}
+
+/* ---------- tabla dinámica ---------- */
+const DIMS={
+ d:{l:"Fecha",f:r=>r.d,ord:()=>DATES,lab:dLong},
+ a:{l:"Almacén",f:r=>r.a,ord:()=>ALMS,lab:x=>x},
+ t:{l:"Turno",f:r=>r.t,ord:()=>TURNOS,lab:turnoLab},
+ m:{l:"Mesa",f:r=>r.m,ord:()=>MESAS,lab:x=>"Mesa "+x},
+ am:{l:"Almacén · Mesa",f:r=>r.a+"·"+r.m,ord:()=>ALMS.flatMap(a=>MESAS.map(m=>a+"·"+m)),lab:x=>x.replace("·"," · Mesa ")},
+ k:{l:"Tipo",f:r=>r.k,ord:()=>TIPOS,lab:x=>x},
+};
+const METRICS={
+ p:{l:"Piezas",f:rs=>rs.reduce((s,r)=>s+r.p,0),fmt:fmt},
+ n:{l:"Personas",f:persons,fmt:fmt},
+ r:{l:"Registros",f:rs=>rs.length,fmt:fmt},
+ ppp:{l:"Pzs / persona",f:rs=>agg(rs).ppp,fmt:fmt1},
+ pct:{l:"% de meta",f:rs=>agg(rs).pct,fmt:v=>fmt1(v)+"%"},
+};
+const PV={rows:"am",cols:"t",metric:"p",sort:null,dir:-1};
+function seg(id,items,cur,onPick){
+  $(id).innerHTML=items.map(([k,l])=>`<button aria-pressed="${k===cur}" data-k="${k}">${l}</button>`).join("");
+  $(id).onclick=e=>{const b=e.target.closest("button");if(b){onPick(b.dataset.k)}};
+}
+let pvMatrix=[];
+function renderPivot(rows){
+  seg("pvRows",Object.entries(DIMS).map(([k,v])=>[k,v.l]),PV.rows,k=>{PV.rows=k;if(PV.cols===k)PV.cols="none";PV.sort=null;renderPivot(filtered())});
+  seg("pvCols",[["none","Ninguna"],...Object.entries(DIMS).map(([k,v])=>[k,v.l])],PV.cols,k=>{PV.cols=k===PV.rows?"none":k;PV.sort=null;renderPivot(filtered())});
+  seg("pvMetric",Object.entries(METRICS).map(([k,v])=>[k,v.l]),PV.metric,k=>{PV.metric=k;renderPivot(filtered())});
+  const R=DIMS[PV.rows],C=PV.cols==="none"?null:DIMS[PV.cols],M=METRICS[PV.metric];
+  const rk=R.ord().filter(k=>rows.some(r=>R.f(r)===k));
+  const ck=C?C.ord().filter(k=>rows.some(r=>C.f(r)===k)):[null];
+  let lines=rk.map(k=>{const rr=rows.filter(r=>R.f(r)===k);return{k,cells:ck.map(c=>M.f(C?rr.filter(r=>C.f(r)===c):rr)),total:M.f(rr)}});
+  if(PV.sort!==null){const i=PV.sort;lines.sort((a,b)=>PV.dir*((i==="total"?a.total-b.total:a.cells[i]-b.cells[i])))}
+  const body=lines.flatMap(l=>l.cells);const mx=Math.max(...body,1);
+  const colTot=ck.map(c=>M.f(C?rows.filter(r=>C.f(r)===c):rows)),grand=M.f(rows);
+  const arr=i=>PV.sort===i?`<span class="arr">${PV.dir<0?"▼":"▲"}</span>`:"";
+  if(!rows.length){$("pivot").innerHTML=`<p class="empty-msg">Sin datos con los filtros actuales.</p>`;pvMatrix=[];return}
+  $("pivot").innerHTML=`<table><thead><tr><th>${R.l}</th>${C?ck.map((c,i)=>`<th><button data-s="${i}">${esc(C.lab(c))}${arr(i)}</button></th>`).join(""):""}<th><button data-s="total">${C?"Total":M.l}${arr("total")}</button></th></tr></thead>
+  <tbody>${lines.map(l=>`<tr><td class="rowlab">${esc(R.lab(l.k))}</td>${C?l.cells.map(v=>`<td class="hm" style="${v?`background:color-mix(in srgb,var(--accent) ${Math.round(8+v/mx*55)}%,var(--surface))`:"color:var(--muted)"}">${v?M.fmt(v):"–"}</td>`).join(""):""}<td><b>${M.fmt(l.total)}</b></td></tr>`).join("")}</tbody>
+  <tfoot><tr><td>Total</td>${C?colTot.map(v=>`<td>${M.fmt(v)}</td>`).join(""):""}<td>${M.fmt(grand)}</td></tr></tfoot></table>`;
+  $("pivot").querySelectorAll("th button").forEach(b=>b.onclick=()=>{const s=b.dataset.s==="total"?"total":+b.dataset.s;if(PV.sort===s)PV.dir*=-1;else{PV.sort=s;PV.dir=-1}renderPivot(filtered())});
+  $("pvInfo").textContent=`${R.l} por ${C?C.l:"total"} · ${M.l}${PV.metric==="n"?" (una vez por fecha, almacén, mesa y turno)":""}`;
+  pvMatrix=[[R.l,...(C?ck.map(c=>C.lab(c)):[]),C?"Total":M.l],...lines.map(l=>[R.lab(l.k),...(C?l.cells:[]),l.total].map((x,i)=>i?M.fmt(x):x)),["Total",...(C?colTot:[]),grand].map((x,i)=>i?M.fmt(x):x)];
+}
+
+/* ---------- detalle ---------- */
+const DT={mode:"reg",q:"",sort:"d",dir:1};
+const DCOLS={
+ reg:[["d","Fecha",r=>dShort(r.d)],["t","Turno",r=>turnoLab(r.t)],["a","Almacén",r=>r.a],["m","Mesa",r=>r.m],["k","Tipo de retrabajo",r=>r.k],["p","Piezas",r=>fmt(r.p)],["n","Personas",r=>r.n]],
+ grp:[["d","Fecha",r=>dShort(r.d)],["m","Mesa",r=>r.m],["t","Turno",r=>turnoLab(r.t)],["a","Almacén",r=>r.a],["k","Tipo de retrabajo",r=>r.k],["p","Piezas",r=>fmt(r.p)],["n","Personas",r=>r.n],["ppp","Pzs / persona",r=>fmt1(r.ppp)]],
+};
+function grouped(rows){const g=new Map();rows.forEach(r=>{const k=[r.d,r.t,r.a,r.m,r.k].join("|");const x=g.get(k)||{...r,p:0,n:0};x.p+=r.p;x.n=Math.max(x.n,r.n);g.set(k,x)});return[...g.values()].map(x=>({...x,ppp:x.n?x.p/x.n:0}))}
+let dtMatrix=[];
+function renderDetail(rows){
+  seg("dtMode",[["reg","Registros"],["grp","Agrupado por mesa, turno y tipo"]],DT.mode,k=>{DT.mode=k;if(k==="reg"&&DT.sort==="ppp")DT.sort="d";renderDetail(filtered())});
+  let data=DT.mode==="reg"?rows.slice():grouped(rows);
+  const q=DT.q.trim().toLowerCase();
+  if(q)data=data.filter(r=>[dShort(r.d),turnoLab(r.t),r.a,"mesa "+r.m,r.k,r.p,r.n].join(" ").toLowerCase().includes(q));
+  const num=["p","n","ppp"].includes(DT.sort);
+  const ordT=x=>TURNOS.indexOf(x);
+  data.sort((a,b)=>{let x=a[DT.sort],y=b[DT.sort];if(DT.sort==="t"){x=ordT(x);y=ordT(y)}else if(DT.sort==="k"){x=TIPOS.indexOf(x);y=TIPOS.indexOf(y)}else if(DT.sort==="m"){x=+x;y=+y}
+    const c=(x<y?-1:x>y?1:0)*DT.dir;return c||a.id-b.id});
+  const cols=DCOLS[DT.mode];
+  const tot=data.reduce((s,r)=>s+r.p,0);
+  $("dtInfo").textContent=`${data.length} fila${data.length===1?"":"s"} · ${fmt(tot)} piezas`;
+  if(!data.length){$("detail").innerHTML=`<p class="empty-msg">Sin filas para mostrar.</p>`;dtMatrix=[];return}
+  $("detail").innerHTML=`<table><thead><tr>${cols.map(([k,l])=>`<th><button data-s="${k}">${l}${DT.sort===k?`<span class="arr">${DT.dir<0?"▼":"▲"}</span>`:""}</button></th>`).join("")}</tr></thead>
+  <tbody>${data.map(r=>`<tr>${cols.map(([k,,f],i)=>`<td>${esc(f(r))}</td>`).join("")}</tr>`).join("")}</tbody>
+  <tfoot><tr><td>Total</td>${cols.slice(1).map(([k])=>`<td>${k==="p"?fmt(tot):""}</td>`).join("")}</tr></tfoot></table>`;
+  $("detail").querySelectorAll("th button").forEach(b=>b.onclick=()=>{const s=b.dataset.s;if(DT.sort===s)DT.dir*=-1;else{DT.sort=s;DT.dir=["p","n","ppp"].includes(s)?-1:1}renderDetail(filtered())});
+  dtMatrix=[cols.map(c=>c[1]),...data.map(r=>cols.map(([,,f])=>f(r)))];
+}
+$("dtSearch").addEventListener("input",e=>{DT.q=e.target.value;renderDetail(filtered())});
+
+/* ---------- copiar, tooltips ---------- */
+function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),1800)}
+function copyM(m){
+  const txt=m.map(r=>r.join("\t")).join("\n");
+  const fallback=()=>{const ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand("copy")}catch(_){}ta.remove();toast(ok?"Tabla copiada. Pégala en Excel o Sheets.":"No se pudo copiar. Selecciona la tabla y usa Ctrl+C.")};
+  try{navigator.clipboard.writeText(txt).then(()=>toast("Tabla copiada. Pégala en Excel o Sheets."),fallback)}catch(_){fallback()}
+}
+$("pvCopy").onclick=()=>copyM(pvMatrix);$("dtCopy").onclick=()=>copyM(dtMatrix);
+const tt=$("tt");
+document.addEventListener("mousemove",e=>{
+  const el=e.target.closest&&e.target.closest("[data-tip]");
+  if(!el){tt.style.display="none";return}
+  tt.innerHTML=el.dataset.tip;tt.style.display="block";
+  const w=tt.offsetWidth,h=tt.offsetHeight;
+  tt.style.left=Math.min(e.clientX+14,innerWidth-w-8)+"px";tt.style.top=Math.max(8,e.clientY-h-10)+"px";
+});
+
+function update(){
+  const rows=filtered();
+  renderFilters();renderKPIs(rows);renderInsights(rows);renderDay();renderBars();renderHeat(rows);renderPivot(rows);renderDetail(rows);
+  $("subtitle").textContent=`Periodo ${dShort(DATES[0])} al ${dShort(DATES[DATES.length-1])}/2026 · ${rows.length} de ${DATA.length} registros con los filtros actuales`;
+}
+update();
+</script>
